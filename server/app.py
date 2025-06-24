@@ -1,47 +1,39 @@
-from flask import Flask,session,request
-from flask_migrate import Migrate
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from dotenv import load_dotenv
-from flask_bcrypt import Bcrypt
+
+
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager
+from config import Config
 from models.database import db
-from models import Appearance,Episode, Guest,User
-from controllers import controllers_blueprint
-from controllers.auth_controller import  auth
+
 
 load_dotenv()
 
 app = Flask(__name__)
-app.config.from_prefixed_env()
+app.config.from_object(Config) #Load configuration from Config class
 
-db.init_app(app)
-migration = Migrate(app, db)
-bcrypt = Bcrypt(app)
-protected_routes = [
-    ("POST", "/appearances"),
-    ("DELETE", "/episodes/<int:id>")
-]
-@app.before_request
-def isAuthenticated():
-    if "uid" not in session and any(
-        request.method == method and request.path.startswith(path)
-        for method, path in protected_routes
-    ):
-        return {"error": "You must be logged in to access this resource"}, 403
+db.init_app(app)  # Initialize SQLAlchemy with the Flask app
+migrate = Migrate(app, db)
+jwt = JWTManager(app)
 
+# Defer blueprint imports to avoid circular imports
+def register_blueprints():
+    from controllers.auth_controller import auth_bp
+    from controllers.guest_controller import guest_bp
+    from controllers.episode_controller import episode_bp
+    from controllers.appearance_controller import appearance_bp
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(guest_bp)
+    app.register_blueprint(episode_bp)
+    app.register_blueprint(appearance_bp)
 
-crud_routes =[
-    {"name": "appearance", "model": Appearance},
-    {"name": "episode", "model": Episode},
-    {"name": "guest", "model": Guest},
-    {"name": "user", "model": User}
-]
+# Register blueprints 
+register_blueprints()
 
-for route in crud_routes:
-    shows = controllers_blueprint(**route)
-    app.register_blueprint(shows, url_prefix=f"/{route['name']}")
-
-
-app.register_blueprint(auth, url_prefix="/auth")
-
-
-
-
+if __name__ == '__main__':
+    app.run(debug=True)
