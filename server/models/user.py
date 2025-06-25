@@ -27,8 +27,8 @@ class User(db.Model,SerializerMixin):
         
         self.password_hash =bcrypt.generate_password_hash(plain_text).decode('utf-8')
         
-    def check_password(self, password):
-        return bcrypt.check_password_hash(self.password_hash, password)
+    def check_password(self, plain_text):
+        return bcrypt.check_password_hash(self.password_hash, plain_text)
 
         
 
