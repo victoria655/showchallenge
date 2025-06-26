@@ -1,7 +1,7 @@
 from .database import db
 from sqlalchemy.ext import hybrid
 import re
-from flask_bcrypt import Bcrypt
+from flask_bcrypt import Bcrypt,generate_password_hash, check_password_hash
 from sqlalchemy_serializer import SerializerMixin
 
 bcrypt= Bcrypt()
