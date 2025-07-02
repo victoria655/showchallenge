@@ -8,21 +8,25 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+
     if not username or not password:
-        return jsonify({'error': 'Username and password required'}), 400
-    
+        return jsonify({'error': 'Username and password are required'}), 400
+
     if User.query.filter_by(username=username).first():
         return jsonify({'error': 'Username already exists'}), 400
-    
-    user = User(username=username)
-    user.password=password
-    db.session.add(user)
-    db.session.commit()
-    
+
+    try:
+        user = User(username=username)
+        user.password = password  # ✅ setter used here
+        db.session.add(user)
+        db.session.commit()
+    except ValueError as ve:
+        return jsonify({'error': str(ve)}), 400
+
     return jsonify({'message': 'User registered successfully'}), 201
+
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
